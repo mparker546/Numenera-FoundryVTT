@@ -152,7 +152,7 @@
 		"recursion": {
 			"templates": ["common"],
 			"name": "",
-			"level": "",
+			"level": 0,
 			"laws": "",
 			"race": "",
 			"focus": "",
