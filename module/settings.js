@@ -1,15 +1,57 @@
-export const registerSystemSettings = function() {
+/* NOTE
+Please keep settings sorted alphabetically, because that's
+how Foundry renders them. Thank you!
+*/
 
-  game.settings.register("numenera", "characterSheet", {
-    name: "Character Sheet",
-    hint: "Select the PC character sheet to use.",
+import { GameFeatures } from "./apps/GameFeatures.js";
+
+export const registerSystemSettings = function() {
+  //To use any of these settings in the code, use:
+  //game.settings.get("numenera", "SETTING_NAME");
+
+  game.settings.register("numenera", "defaultToTaskDialog", {
+    name: "Use Task dialog by default",
+    hint: "If enabled, will invert the behavior of roll buttons macros: clicking one will open the Task dialog and Ctrl+Click will perform a regular roll.",
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: false,
+  });
+
+  game.settings.register("numenera", "gameFeaturesPreset", {
+    name: "Game Features Preset",
+    label: "Game Features Preset",
+    hint: "Some feature presets for various game. You can always choose to override individual settings after setting a preset.",
+    icon: "",
+    scope: "world",
+    type: String,
+    default: "custom",
+    restricted: true,
+  });
+
+  game.settings.registerMenu("numenera", "gameFeatures", {
+    name: "Game Features",
+    label: "Game Features",
+    hint: "Use game presets or toggle individual game features such as oddities, recursions, power shifts, etc.",
+    icon: "fa fa-bars",
+    type: GameFeatures,
+    restricted: true,
+  });
+
+  /**
+   * Configure what version of armor-wearing penalty to use
+   */
+  game.settings.register("numenera", "armorPenalty", {
+    name: "Armor Penalty",
+    hint: "Select the type of armor penalty to use",
     scope: "world",
     config: true,
-    type: Number,
-    default: 1,
+    type: String,
+    default: "new",
     choices: {
-      1: "Numenera",
-      2: "The Strange"
+      "new": "Increase Speed Effort cost",
+      "old": "Reduce Speed pool, Might cost per hour",
+      "none": "Don't take armor penalties into account for rolls and calculations",
     },
   });
 
@@ -27,28 +69,19 @@ export const registerSystemSettings = function() {
     },
   });
 
-  game.settings.register("numenera", "useRecursions", {
-    name: "Recursions",
-    hint: "Toggle the use of Recursion in your game.",
-    scope: "world",
-    config: true,
-    type: Boolean,
-    default: false,
-  });
-
   /**
    * Configure d20-rolling options
    */
   game.settings.register("numenera", "d20Rolling", {
     name: "d20 rolling",
-    hint: "Select the behavior of d20 rolls in your game",
+    hint: "Select the behavior of rolls made from the character sheet or macros",
     scope: "world",
     config: true,
     type: String,
     default: "taskLevels",
     choices: {
-      "taskLevels": "Output task level success instead of numbers",
-      "straightNumbers": "Output numbers and modifiers as is",
+      "taskLevels": "Output plain task level success without modifiers",
+      "addModifiers": "Output task level success, adding any modifiers (eg. skill level)",
     },
   });
 
@@ -139,9 +172,9 @@ export const registerSystemSettings = function() {
   /**
    * Configure whether or not to show numenera icons
    */
-  game.settings.register("numenera", "showNumeneraIcons", {
+  game.settings.register("numenera", "showCypherIcons", {
     name: "Numenera Icons",
-    hint: "Enable to show cypher, artifact, and oddity icons in player character sheets",
+    hint: "Enable to show cypher and similar items' (eg. artifact, oddity, etc.) icons in player character sheets",
     scope: "world",
     config: true,
     type: Boolean,
@@ -158,6 +191,66 @@ export const registerSystemSettings = function() {
     config: true,
     type: Boolean,
     default: true
+  });
+
+  /**
+   * Configure whether or not to show numenera icons
+   */
+  game.settings.register("numenera", "showPowerShiftIcons", {
+    name: "Power Shift Icons",
+    hint: "Enable to show power shift icons in player character sheets",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true
+  });
+
+  /**
+   * Configure whether or not to use oddities
+   */
+  game.settings.register("numenera", "useOddities", {
+    name: "Feature: Oddities",
+    hint: "Enable the use of Oddities in your game.",
+    scope: "world",
+    config: false,
+    type: Boolean,
+    default: true
+  });
+
+  /**
+   * Configure whether or not to use Power Shifts
+   */
+  game.settings.register("numenera", "usePowerShifts", {
+    name: "Feature: Power Shifts",
+    hint: "Enable the use of Power Shifts in your game.",
+    scope: "world",
+    config: false,
+    type: Boolean,
+    default: false
+  });
+
+  /**
+   * Configure whether or not to use Recursions
+   */
+  game.settings.register("numenera", "useRecursions", {
+    name: "Feature: Recursions",
+    hint: "Enable the use of Recursions in your game.",
+    scope: "world",
+    config: false,
+    type: Boolean,
+    default: false,
+  });
+
+  /**
+   * Configure whether or not to use Spells
+   */
+  game.settings.register("numenera", "useSpells", {
+    name: "Feature: Spells",
+    hint: "Enable the use of Spells in your game, as a sub-type of Abilities.",
+    scope: "world",
+    config: false,
+    type: Boolean,
+    default: false
   });
 
   /**

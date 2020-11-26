@@ -6,6 +6,8 @@ import { RollData } from "../dice/RollData.js";
 import { NumeneraPCActor } from "../actor/NumeneraPCActor.js";
 
 import { NumeneraSkillItem } from "../item/NumeneraSkillItem.js";
+import { NumeneraAbilityItem } from "../item/NumeneraAbilityItem.js";
+import { NumeneraPowerShiftItem } from "../item/NumeneraPowerShiftItem.js";
 
 export class EffortDialog extends FormApplication {
   /**
@@ -21,7 +23,7 @@ export class EffortDialog extends FormApplication {
       submitOnClose: false,
       editable: true,
       width: 360,
-      height: 460,
+      height: "auto",
     });
   }
 
@@ -46,14 +48,73 @@ export class EffortDialog extends FormApplication {
     ];
   }
 
+
+  /**
+  * Creates an instance of EffortDialog, using IDs instead of items.
+  * @param {NumeneraPCActor} actor
+  * @param {string} [stat=null]
+  * @param {string} [skill=null]
+  * @param {string} [ability=null]
+  * @param {string} [powerShift=null]
+  * @param {Number} [assets=0]
+  * @memberof EffortDialog
+  */
+  static async create(actor, options={}) {
+    if (!actor) {
+      ui.notifications.error("Tried calling EffortDialog.create without an actor");
+    }
+
+    //For all items we allow lookup by 
+    // - ID
+    // - name, filtered by item type
+    if (options.ability) {
+      const temp = options.ability;
+      options.ability = await actor.getOwnedItem(temp);
+
+      if (!options.ability)
+        options.ability = actor.items.find(ab => ab.name === temp && ab.type === NumeneraAbilityItem.type);
+
+      if (!options.ability)
+        ui.notifications.error("The ability does not exist");
+    }
+
+    if (options.skill) {
+      const temp = options.skill;
+      options.skill = await actor.getOwnedItem(temp);
+
+      if (!options.skill)
+        options.skill = actor.items.find(sk => sk.name === temp && sk.type === NumeneraSkillItem.type);
+
+      if (!options.skill)
+        ui.notifications.error("The skill does not exist");
+    }
+
+    if (options.powerShift) {
+      const temp = options.powerShift;
+      options.powerShift = await actor.getOwnedItem(temp);
+
+      if (!options.powerShift)
+        options.powerShift = actor.items.find(ps => ps.name === temp && ps.type === NumeneraPowerShiftItem.type);
+
+      if (!options.powerShift)
+        ui.notifications.error("The power shift does not exist");
+    }
+
+    (new EffortDialog(actor, options)).render(true);
+  }
+
   /**
    *Creates an instance of EffortDialog.
   * @param {NumeneraPCActor} actor
   * @param {string} [stat=null]
   * @param {NumeneraSkillItem} [skill=null]
+  * @param {NumeneraAbilityItem} [ability=null]
+  * @param {Number} [assets=0]
+  * @param {Number} [taskLevel=null]
+  * @param {NumeneraPowerShiftItem} [powerShift=null]
   * @memberof EffortDialog
   */
-  constructor(actor, {stat=null, skill=null, ability=null}) {
+  constructor(actor, {stat=null, skill=null, ability=null, assets=0, taskLevel=null, powerShift=null}) {
     if (!stat) {
       if (ability) {
         stat = getShortStat(ability.data.data.cost.pool);
@@ -73,10 +134,6 @@ export class EffortDialog extends FormApplication {
     if (stat) {
       current = actor.data.data.stats[stat].pool.value;
       remaining = current;
-
-      if (ability) {
-        remaining -= ability.data.data.cost.amount;
-      }
     }
 
     const skills = actor.getEmbeddedCollection("OwnedItem")
@@ -90,6 +147,13 @@ export class EffortDialog extends FormApplication {
         return sk;
       });
 
+    let powerShifts = null;
+    if (game.settings.get("numenera", "usePowerShifts")) {
+      powerShifts = actor.getEmbeddedCollection("OwnedItem")
+        .filter(i => i.type === "powerShift")
+        .map(NumeneraPowerShiftItem.fromOwnedItem);
+    }
+
     super({
       actor,
       stat,
@@ -98,10 +162,14 @@ export class EffortDialog extends FormApplication {
       ability,
       current,
       remaining,
-      assets: 0,
+      assets,
       currentEffort: 0,
       cost: 0,
-      taskLevel: null,
+      taskLevel,
+      useArmorSpeedEffortRule: (game.settings.get("numenera", "armorPenalty") === "new"),
+      armorSpeedEffortIncrease: actor.extraSpeedEffortCost,
+      powerShifts,
+      powerShift,
     }, {});
   }
 
@@ -139,18 +207,60 @@ export class EffortDialog extends FormApplication {
     if (this.object.taskLevel === null)
       return null;
 
-    let level = this.object.taskLevel - this.object.currentEffort - this.object.assets;
+    let level = this.object.taskLevel
+              - this.object.currentEffort
+              - this.object.assets
+              + (this.object.actor.data.data.damageTrack > 0 ? 1 : 0);
     
     if (this.object.skill) {
-      //TODOO use the SkillItem method to convert it wwhen it's set instead of checking here
+      //TODO use the SkillItem method to convert it when it's set instead of checking here
       let skillData = this.object.skill.data;
       if (skillData.hasOwnProperty("data"))
         skillData = skillData.data;
 
-      level -= skillData.skillLevel - (skillData.inability ? 1 : 0);
+      level = level - skillData.skillLevel + (skillData.inability ? 1 : 0);
+
+      if (skillData.stat === "speed")
+        level += this.object.speedEffortCostIncrease;
+    }
+
+    if (this.object.powerShifts && this.object.powerShift) {
+      level -= this.object.powerShift.data.data.level;
     }
 
     return Math.max(level, 0); //Level cannot be negative
+  }
+
+  /**
+   * Checks whether the current task allows an automatic sucess.
+   *
+   * @readonly
+   * @memberof EffortDialog
+   */
+  get automaticSuccess() {
+    /* JS "fun" fact:
+    null == 0 returns false
+    null <= 0 and null >= 0 both return true
+
+    ¯\_(ツ)_/¯
+
+    #ididntchoosetheJSlife
+    */
+    const finalLevel = this.finalLevel;
+    return finalLevel !== null && finalLevel <= 0;
+  }
+
+  /**
+   *
+   *
+   * @readonly
+   * @memberof EffortDialog
+   */
+  get automaticFailure() {
+    const finalLevel = this.finalLevel;
+    //A task level of 7 would require rolling a 21 on a d20. Good luck with that!
+    //Also, see note in the automaticSuccess getter.
+    return finalLevel !== null && finalLevel >= 7;
   }
 
   /**
@@ -161,7 +271,7 @@ export class EffortDialog extends FormApplication {
    * @memberof EffortDialog
    */
   get rollButtonText() {
-    let text = "Roll";
+    let text = game.i18n.localize("NUMENERA.roll");
     if (this.object.currentEffort > 0) {
       text += ` ${game.i18n.localize("NUMENERA.with")} ${this.object.currentEffort} ${game.i18n.localize("NUMENERA.effort.title")}`;
     }
@@ -171,6 +281,14 @@ export class EffortDialog extends FormApplication {
     }
 
     return text;
+  }
+
+  get automaticSuccessText() {
+    return game.i18n.localize("NUMENERA.effort.succeedAutomatically");
+  }
+
+  get automaticFailureText() {
+    return game.i18n.localize("NUMENERA.effort.failAutomatically");
   }
 
   /**
@@ -185,10 +303,23 @@ export class EffortDialog extends FormApplication {
     data.skills = this.object.skills;
     data.skill = this.object.skill;
 
+    data.powerShifts = this.object.powerShifts;
+    data.powerShift = this.object.powerShift;
+
     if (this.object.stat)
       data.stat = "NUMENERA.stats." + this.object.stat;
 
+    data.useArmorSpeedEffortRule = this.object.useArmorSpeedEffortRule;
+
+    if (data.useArmorSpeedEffortRule) {
+      if (this.object.stat === "speed")
+        data.armorSpeedEffortIncrease = this.object.armorSpeedEffortIncrease;
+      else
+        data.armorSpeedEffortIncrease = "--";
+    }
+
     data.assets = this.object.assets;
+    data.damageTrackPenalty = this.object.actor.data.data.damageTrack > 0;
     data.currentEffort = this.object.currentEffort;
     data.maxEffortLevel = this.object.actor.data.data.effort;
     data.taskLevel = this.object.taskLevel;
@@ -213,6 +344,11 @@ export class EffortDialog extends FormApplication {
     data.warning = this.warning;
     data.displayWarning = !!data.warning;
     data.rollButtonText = this.rollButtonText;
+    data.automaticFailureText = this.automaticFailureText;
+    data.automaticSuccessText = this.automaticSuccessText;
+    data.rollButtonText = this.rollButtonText;
+    data.automaticFailure = this.automaticFailure;
+    data.automaticSuccess = this.automaticSuccess;
 
     return data;
   }
@@ -224,6 +360,8 @@ export class EffortDialog extends FormApplication {
     super.activateListeners(html);
 
     html.find("#roll-with-effort").click(this._rollWithEffort.bind(this));
+    html.find("#failure-close").click(this._failAutomatically.bind(this));
+    html.find("#succeed-automatically").click(this._succeedAutomatically.bind(this));
   }
 
   /**
@@ -256,9 +394,16 @@ export class EffortDialog extends FormApplication {
     rollData.effortLevel = this.object.currentEffort;
     rollData.taskLevel = this.finalLevel;
     rollData.rollMode = this.object.rollMode;
+    rollData.damageTrackPenalty = this.object.actor.data.data.damageTrack;
 
     if (this.object.skill) {
-      actor.rollSkill(this.object.skill, rollData, this.object.ability);
+      let skill = this.object.skill;
+      
+      //Fetch the skill, might be one of these weird kind-of-Item objects
+      if (skill._id)
+        skill = this.object.actor.getOwnedItem(this.object.skill._id);
+
+      actor.rollSkill(skill, rollData, this.object.ability);
     }
     else {
       actor.rollAttribute(shortStat, rollData);
@@ -274,6 +419,42 @@ export class EffortDialog extends FormApplication {
 
     //TIME TO PAY THE PRICE MWAHAHAHAHAHAHAH
     actor.update(data);
+
+    this.close();
+  }
+
+  async _failAutomatically() {
+    //Ensure that is really the case
+    if (!this.automaticFailure) {
+      throw new Error("Should not fail automatically in this case");
+    }
+
+    await ChatMessage.create({
+      user: game.user._id,
+      speaker: ChatMessage.getSpeaker({user: game.user}),
+      sound: CONFIG.sounds.dice,
+      content: await renderTemplate("systems/numenera/templates/chat/automaticResult.html", {
+        result: game.i18n.localize("NUMENERA.effort.failAutomatically"),  
+      }),
+    });
+    
+    this.close();
+  }
+
+  async _succeedAutomatically() {
+    //Ensure that is really the case
+    if (this.automaticFailure || !this.automaticSuccess) {
+      throw new Error("Should not succeed automatically in this case");
+    }
+
+    await ChatMessage.create({
+      user: game.user._id,
+      speaker: ChatMessage.getSpeaker({user: game.user}),
+      sound: CONFIG.sounds.dice,
+      content: await renderTemplate("systems/numenera/templates/chat/automaticResult.html", {
+        result: game.i18n.localize("NUMENERA.effort.succeedAutomatically"),  
+      }),
+    });
 
     this.close();
   }
@@ -335,6 +516,15 @@ export class EffortDialog extends FormApplication {
     const shortStat = getShortStat(this.object.stat);
     this.object.current = actor.data.data.stats[shortStat].pool.value;
     this.object.remaining = this.object.current - this.object.cost;
+
+    if (formData.powerShift) {
+      const powerShift = actor.getEmbeddedCollection("OwnedItem")
+                          .find(i => i._id === formData.powerShift);
+      this.object.powerShift = NumeneraPowerShiftItem.fromOwnedItem(powerShift);
+    }
+    else {
+      this.object.powerShift = null;
+    }
     
     //Re-render the form since it's not provided for free in FormApplications
     this.render();

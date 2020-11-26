@@ -15,12 +15,19 @@ export const preloadHandlebarsTemplates = async() => {
         // Actor partials
         "systems/numenera/templates/actor/partials/artifacts.html",
         "systems/numenera/templates/actor/partials/cyphers.html",
+        "systems/numenera/templates/actor/partials/features.html",
         "systems/numenera/templates/actor/partials/oddities.html",
+        "systems/numenera/templates/actor/partials/powerShifts.html",
         "systems/numenera/templates/actor/partials/recursions.html",
+        "systems/numenera/templates/actor/partials/weapons.html",
+
+        // Chat messages
+        "systems/numenera/templates/chat/automaticResult.html",
 
         // Dialog Sheets
         "systems/numenera/templates/dialog/effort.html",
         "systems/numenera/templates/dialog/recovery.html",
+        "systems/numenera/templates/dialog/spellUse.html",
 
         //Item sheets
         "systems/numenera/templates/item/abilitySheet.html",
@@ -29,6 +36,7 @@ export const preloadHandlebarsTemplates = async() => {
         "systems/numenera/templates/item/cypherSheet.html",
         "systems/numenera/templates/item/equipmentSheet.html",
         "systems/numenera/templates/item/odditySheet.html",
+        "systems/numenera/templates/item/powerShiftSheet.html",
         "systems/numenera/templates/item/skillSheet.html",
         "systems/numenera/templates/item/weaponSheet.html",
         "systems/numenera/templates/item/recursionSheet.html",
@@ -36,6 +44,9 @@ export const preloadHandlebarsTemplates = async() => {
         //Token stuff
         "systems/numenera/templates/hud/tokenHUD.html",
         "systems/numenera/templates/scene/tokenConfig.html",
+        "systems/numenera/templates/scene/tokenConfig_06.html",
+
+        "systems/numenera/templates/settings/features.html",
     ];
 
     // Load the template parts

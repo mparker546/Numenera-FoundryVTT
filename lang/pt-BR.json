@@ -41,7 +41,7 @@
   "NUMENERA.pcActorSheet.advancement.xp": "XP",
   "NUMENERA.pcActorSheet.tab.skills": "Perícias",
   "NUMENERA.pcActorSheet.tab.abilities": "Habilidades Especiais",
-  "NUMENERA.pcActorSheet.tab.numenera": "Numenera",
+  "NUMENERA.pcActorSheet.tab.cyphers": "Cifras",
   "NUMENERA.pcActorSheet.tab.strange": "Estranho",
   "NUMENERA.pcActorSheet.tab.recursion": "Recursos",
   "NUMENERA.pcActorSheet.tab.equipment": "Equipamento",
@@ -216,7 +216,7 @@
   "NUMENERA.item.artifact.newArtifact": "Novo Artefato",
 
   "NUMENERA.item.cypher.level": "Nível",
-  "NUMENERA.item.cypher.type": "Tipo",
+  "NUMENERA.item.cypher.type.label": "Tipo",
   "NUMENERA.item.cypher.type.anoetic": "Anoética",
   "NUMENERA.item.cypher.type.occultic": "Ocultista",
   "NUMENERA.item.cypher.form": "forma",
@@ -232,7 +232,6 @@
 
   "NUMENERA.item.skill.stat": "Estado",
   "NUMENERA.item.skill.description": "Descrição",
-  "NUMENERA.item.skill.relatedAbilityUpdated": "Informação de habilidade especial relacionada foi atualizada",
   "NUMENERA.item.skill.useNotLinkedToActor": "A perícia não está relacionada a um ator",
 
   "NUMENERA.item.weapon.newWeapon": "Nova Arma",

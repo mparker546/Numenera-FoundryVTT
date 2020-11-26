@@ -128,16 +128,20 @@ NUMENERA.abilityTypes = [
   "NUMENERA.item.ability.type.enabler",
 ];
 
+NUMENERA.abilityTypesWithSpells = NUMENERA.abilityTypes.concat("NUMENERA.item.ability.type.spell");
+
 NUMENERA.cypherTypes = {
-  numenerav1: [
-    "NUMENERA.item.cypher.type.anoetic",
-    "NUMENERA.item.cypher.type.occultic",
-  ],
-  cypherSystem: [
-    "NUMENERA.item.cypher.type.subtle",
-    "NUMENERA.item.cypher.type.manifest",
-    "NUMENERA.item.cypher.type.fantastic",
-  ]
+  numenerav1: {
+    "unknown": "NUMENERA.unknown",
+    "anoetic": "NUMENERA.item.cypher.type.anoetic",
+    "occultic": "NUMENERA.item.cypher.type.occultic",
+  },
+  cypherSystem: {
+    "unknown": "NUMENERA.unknown",
+    "subtle": "NUMENERA.item.cypher.type.subtle",
+    "manifest": "NUMENERA.item.cypher.type.manifest",
+    "fantastic": "NUMENERA.item.cypher.type.fantastic",
+  },
 };
 
 // Note that these colors do not get propagated to the CSS; that would be neat, though
@@ -150,4 +154,17 @@ NUMENERA.attributeColors = {
 NUMENERA.units = {
   feet: "NUMENERA.canvas.unit.feet",
   meters: "NUMENERA.canvas.unit.meters",
+};
+
+NUMENERA.tabbedFeatures = {
+  "recursions": "NUMENERA.pcActorSheet.tab.recursion",
+  "powerShifts": "NUMENERA.pcActorSheet.features.powerShifts.title",
+};
+
+NUMENERA.powerShiftEffects = {
+  easePower: "NUMENERA.pcActorSheet.features.powerShifts.effects.easePower",
+  easeTasks: "NUMENERA.pcActorSheet.features.powerShifts.effects.easeTasks",
+  extraRecoveries: "NUMENERA.pcActorSheet.features.powerShifts.effects.extraRecoveries",
+  increaseArmor: "NUMENERA.pcActorSheet.features.powerShifts.effects.increaseArmor",
+  singleAttack: "NUMENERA.pcActorSheet.features.powerShifts.effects.singleAttack",
 };

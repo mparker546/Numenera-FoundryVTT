@@ -1,4 +1,5 @@
 import { NUMENERA } from "../../config.js";
+import { NumeneraCypherItem } from "../NumeneraCypherItem.js";
 
 export class NumeneraCypherItemSheet extends ItemSheet {
     /**
@@ -31,12 +32,12 @@ export class NumeneraCypherItemSheet extends ItemSheet {
     getData() {
         const sheetData = super.getData();
 
-        const useCypherTypes = (game.settings.get("numenera", "cypherTypesFlavor") !== 1);
-        sheetData.useCypherTypes = useCypherTypes;
-
-        if (useCypherTypes) {
-            sheetData.cypherTypes = NUMENERA.cypherTypes;
-        }
+        const flavor = NumeneraCypherItem.cypherTypeFlavor;
+        const useCypherTypes = !!flavor;
+        
+        sheetData.displayCypherType = useCypherTypes;
+        if (useCypherTypes)
+            sheetData.cypherTypes = NUMENERA.cypherTypes[flavor];
 
         return sheetData;
     }

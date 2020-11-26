@@ -10,6 +10,7 @@ import { NumeneraArtifactItemSheet } from './module/item/sheets/NumeneraArtifact
 import { NumeneraCypherItemSheet } from './module/item/sheets/NumeneraCypherItemSheet.js';
 import { NumeneraEquipmentItemSheet } from './module/item/sheets/NumeneraEquipmentItemSheet.js';
 import { NumeneraOddityItemSheet } from './module/item/sheets/NumeneraOddityItemSheet.js';
+import { NumeneraPowerShiftItemSheet } from './module/item/sheets/NumeneraPowerShiftItemSheet.js';
 import { NumeneraSkillItemSheet } from './module/item/sheets/NumeneraSkillItemSheet.js';
 import { NumeneraWeaponItemSheet } from './module/item/sheets/NumeneraWeaponItemSheet.js';
 import { StrangeRecursionItemSheet } from './module/item/sheets/StrangeRecursionItemSheet.js';
@@ -20,6 +21,7 @@ import { preloadHandlebarsTemplates } from './module/templates.js';
 import { registerSystemSettings } from './module/settings.js';
 import { migrateWorld } from './module/migrations/migrate.js';
 import { numeneraSocketListeners } from './module/socket.js';
+import { EffortDialog } from './module/apps/EffortDialog.js';
 import { RecoveryDialog } from './module/apps/RecoveryDialog.js';
 import { registerHandlebarHelpers } from './module/handlebarHelpers.js';
 import { add3rdBarToPCTokens, cypherToken } from './module/token.js';
@@ -33,6 +35,7 @@ Hooks.once("init", function() {
 
     game.numenera = {
         applications: {
+            EffortDialog,
             RecoveryDialog,
         },
         useItemMacro,
@@ -62,6 +65,7 @@ Hooks.once("init", function() {
     Items.registerSheet("numenera", NumeneraCypherItemSheet, { types: ["cypher"], makeDefault: true });
     Items.registerSheet("numenera", NumeneraEquipmentItemSheet, { types: ["equipment"], makeDefault: true });
     Items.registerSheet("numenera", NumeneraOddityItemSheet, { types: ["oddity"], makeDefault: true });
+    Items.registerSheet("numenera", NumeneraPowerShiftItemSheet, { types: ["powerShift"], makeDefault: true });
     Items.registerSheet("numenera", NumeneraSkillItemSheet, { types: ["skill"], makeDefault: true });
     Items.registerSheet("numenera", NumeneraWeaponItemSheet, { types: ["weapon"], makeDefault: true });
     Items.registerSheet("numenera", StrangeRecursionItemSheet, { types: ["recursion"], makeDefault: true });

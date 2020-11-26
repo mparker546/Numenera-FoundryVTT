@@ -1,9 +1,14 @@
 import { RollData } from "../dice/RollData.js";
 
+import { EffortDialog } from "../apps/EffortDialog.js";
+
 import { NumeneraAbilityItem } from "../item/NumeneraAbilityItem.js";
+import { NumeneraArmorItem } from "../item/NumeneraArmorItem.js";
 import { NumeneraSkillItem } from "../item/NumeneraSkillItem.js";
 import { NumeneraWeaponItem } from "../item/NumeneraWeaponItem.js";
-import { getShortStat } from "../utils.js";
+import { getShortStat, useAlternateButtonBehavior } from "../utils.js";
+import { NUMENERA } from "../config.js";
+import { NumeneraPowerShiftItem } from "../item/NumeneraPowerShiftItem.js";
 
 /**
  * Extend the base Actor class to implement additional logic specialized for Numenera.
@@ -44,7 +49,6 @@ export class NumeneraPCActor extends Actor {
 
   getInitiativeFormula() {
     //Check for an initiative skill
-    //TODO allow "initiative" in different languages if the current locale isn't "en"
     let initSkill = this.items.find(i => i.type === "skill" && i.name.toLowerCase() === "initiative");
     if (!initSkill) {
       initSkill = new NumeneraSkillItem();
@@ -53,22 +57,7 @@ export class NumeneraPCActor extends Actor {
 
     const rollData = this.getSkillRollData(initSkill);
 
-    //TODO possible assets, effort on init roll
-    return rollData.getRollFormula();
-  }
-
-  /**
-   * Get the current PC's level on the damage track as an integer, 0 being Hale and 3 being Dead.
-   * @type {Object} stats Stats object (see template.json)
-   */
-  damageTrackLevel(stats = null) {
-    if (stats === null)
-      stats = this.data.data.stats;
-
-    //Each stat pool whose value is 0 counts as being one step higher on the damage track
-    return Object.values(stats).filter(stat => {
-      return stat.pool.value === 0;
-    }).length;
+    return rollData.getInitiativeRollFormula();
   }
 
   /**
@@ -87,6 +76,7 @@ export class NumeneraPCActor extends Actor {
 
     rollOptions.skillLevel = data ? data.skillLevel : 0;
     rollOptions.isHindered = data ? data.inability : false;
+    rollOptions.damageTrackPenalty = this.data.data.damageTrack > 0;
 
     return rollOptions;
   }
@@ -143,7 +133,7 @@ export class NumeneraPCActor extends Actor {
     }
 
     roll.toMessage({
-      speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+      speaker: ChatMessage.getSpeaker(),
       messageData: RollData.rollText(roll),
       flavor,
     },
@@ -161,6 +151,11 @@ export class NumeneraPCActor extends Actor {
    * @memberof NumeneraPCActor
    */
   rollAttribute(attribute, rollData = null) {
+    //This really shouldn't be in an Actor class, but it makes it SO easier to create stat macros...
+    if (useAlternateButtonBehavior()) {
+      return new EffortDialog(this, { stat: attribute }).render(true);
+    }
+
     // Create a pseudo-skill to avoid repeating the roll logic
     const skill = new NumeneraSkillItem();
 
@@ -206,9 +201,15 @@ export class NumeneraPCActor extends Actor {
     if (effortLevel === 0)
       return Math.max(0, extraCost - stat.edge);
 
-    //The first effort level costs 3 pts from the pool, extra levels cost 2
-    //Subtract the related Edge and add any extra cost
-    return Math.max(0, 1 + 2 * effortLevel + extraCost - stat.edge);
+    let extraArmorCost = 0;
+    if (shortStat === "speed") {
+      extraArmorCost = this.extraSpeedEffortCost;
+    }
+
+    //The first effort level costs 3 pts from the pool, extra levels cost 2,
+    //If using the rule, Speed Effort's cost may be increased by armor use
+    //Then, subtract the related Edge and add any extra cost (eg. ability use cost)
+    return Math.max(0, 1 + (2 + extraArmorCost) * effortLevel + extraCost - stat.edge);
   }
 
   /**
@@ -230,8 +231,110 @@ export class NumeneraPCActor extends Actor {
   }
 
   getTotalArmor() {
-    return this.getEmbeddedCollection("OwnedItem").filter(i => i.type === "armor")
+    return this.getEmbeddedCollection("OwnedItem").filter(i => i.type === NumeneraArmorItem.type)
       .reduce((acc, armor) => acc + Number(armor.data.armor), 0);
+  }
+
+  get mightCostPerHour() {
+    const heaviestArmor = this._getHeaviestArmor();
+
+    if (heaviestArmor === null) {
+      return 0;
+    }
+
+    return heaviestArmor.mightCostPerHour;
+  }
+
+  /**
+   * Compute the possible Speed pool penalty when wearing armor.
+   *
+   * @readonly
+   * @memberof NumeneraPCActor
+   */
+  get speedPoolPenalty() {
+    const heaviestArmor = this._getHeaviestArmor();
+
+    if (heaviestArmor === null) {
+      return 0;
+    }
+
+    return heaviestArmor.armorSpeedPoolReduction;
+  }
+
+  /**
+   * Compute how much a level of Speed Effort costs in extra
+   * when wearing armor.
+   *
+   * @readonly
+   * @memberof NumeneraPCActor
+   */
+  get extraSpeedEffortCost() {
+    if (game.settings.get("numenera", "armorPenalty") !== "new") {
+      return 0; // does not apply
+    }
+
+    //TODO we're hitting the embedded collections twice... maybe cache the result?
+    //recompute whenever armor values change, are added or deleted
+
+    const heaviestArmor = this._getHeaviestArmor();
+    if (!heaviestArmor)
+      return 0;
+
+    let speedEffortPenalty = heaviestArmor.weightIndex;
+
+    //Local, utility function
+    const searchArmorSkill = name => {
+      return !!this.getEmbeddedCollection("OwnedItem")
+      .some(i => i.type === NumeneraAbilityItem.type && i.name === name);
+    }
+
+    //Look for any reducing skill(s)
+    if (searchArmorSkill("Mastery with Armor")) {
+      speedEffortPenalty -= 2;
+    }
+    else if (searchArmorSkill("Trained in Armor")) {
+      speedEffortPenalty -= 1;
+    }
+
+    //Negative penalties are not allowed, for obvious reasons!
+    return Math.max(speedEffortPenalty, 0);
+  }
+
+  /**
+   * Return the amount of recoveries available to that Actor.
+   *
+   * @readonly
+   * @memberof NumeneraPCActor
+   */
+  get nbRecoveries() {
+    let recoveries = NUMENERA.totalRecoveries;
+
+    if (game.settings.get("numenera", "usePowerShifts")) {
+      recoveries = this.getEmbeddedCollection("OwnedItem")
+        .filter(i => i.type === NumeneraPowerShiftItem.type && i.data.effect === NUMENERA.powerShiftEffects.extraRecoveries)
+        .reduce((total, current) => total + parseInt(current.data.level), recoveries)
+    }
+
+    return recoveries;
+  }
+
+  /**
+   * Get the PC's heaviest piece of armor.
+   *
+   * @returns {NumeneraArmorItem | null}
+   * @memberof NumeneraPCActor
+   */
+  _getHeaviestArmor() {
+      //Armor with weight "N/A" are considered to have 0 weight
+      const armor = this.getEmbeddedCollection("OwnedItem")
+      .filter(i => i.type === NumeneraArmorItem.type)
+      .map(NumeneraArmorItem.fromOwnedItem);
+  
+      if (armor.length <= 0)
+        return null;
+  
+      armor.sort(NumeneraArmorItem.compareArmorWeights);
+      return armor[armor.length - 1];
   }
 
   async onGMIntrusion(accepted) {
@@ -368,7 +471,8 @@ export class NumeneraPCActor extends Actor {
       return false;
     }
 
-    ability.use();
+    if (!await ability.use())
+      return false;
 
     const cost = ability.getCost();
     if (cost.amount === 0) {
@@ -464,7 +568,7 @@ export class NumeneraPCActor extends Actor {
             _id: relatedSkill.data._id,
             "data.relatedAbilityId": actorAbility._id,
           };
-          await this.updateEmbeddedEntity("OwnedItem", updated);
+          await this.updateEmbeddedEntity("OwnedItem", updated, {fromActorUpdateEmbeddedEntity: true});
 
           ui.notifications.info(game.i18n.localize("NUMENERA.info.linkedToSkillWithSameName"));
         } else {
@@ -498,8 +602,6 @@ export class NumeneraPCActor extends Actor {
     if (!updatedItem)
       return;
 
-    if (options.fromActorUpdateEmbeddedEntity)
-      return updated;
 
     switch (updatedItem.type) {
       case "ability":
@@ -535,5 +637,8 @@ export class NumeneraPCActor extends Actor {
         skill.updateRelatedAbility(relatedAbility, options);
         break;
     }
+
+    if (options.fromActorUpdateEmbeddedEntity)
+      return updated;
   }
 }

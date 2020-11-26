@@ -83,12 +83,12 @@
         }
     },
     "Item": {
-        "types": ["ability", "armor", "artifact", "cypher", "equipment", "npcAttack", "oddity", "recursion", "skill", "weapon"],
+        "types": ["ability", "armor", "artifact", "cypher", "equipment", "npcAttack", "oddity", "powerShift", "recursion", "skill", "weapon"],
         "templates": {
             "common": {
                 "notes": "",
                 "order": -1,
-                "version": 3
+                "version": 5
             },
             "numenera": {
                 "identified": false,
@@ -109,13 +109,13 @@
         },
         "ability": {
             "templates": ["common", "ranged"],
+            "abilityType": "",
             "category": "",
             "categoryValue": "",
             "cost": {
                 "amount": 0,
                 "pool": ""
             },
-            "isAction": false,
             "tier": ""
         },
         "armor": {
@@ -145,6 +145,11 @@
         "oddity": {
             "templates": ["carriable", "common"]
         },
+        "powerShift": {
+            "templates": ["common"],
+            "effect": "",
+            "level": 0
+        },
         "recursion": {
             "templates": ["common"],
             "active": false,
@@ -164,6 +169,7 @@
         },
         "weapon": {
             "templates": ["common", "ranged", "sellable", "weight"],
+            "ammo": 0,
             "damage": 0,
             "weaponType": ""
           }

@@ -54,7 +54,7 @@
 
     "NUMENERA.pcActorSheet.tab.skills": "Habilidades",
     "NUMENERA.pcActorSheet.tab.abilities": "Capacidades",
-    "NUMENERA.pcActorSheet.tab.numenera": "Numenera",
+    "NUMENERA.pcActorSheet.tab.cyphers": "Cypher",
     "NUMENERA.pcActorSheet.tab.strange": "Strange",
     "NUMENERA.pcActorSheet.tab.recursion": "Recursiones",
     "NUMENERA.pcActorSheet.tab.equipment": "Equipo",
@@ -236,7 +236,7 @@
     "NUMENERA.item.artifact.newArtifact": "Nuevo Artefacto",
 
     "NUMENERA.item.cypher.level": "Nivel",
-    "NUMENERA.item.cypher.type": "Tipo",
+    "NUMENERA.item.cypher.type.label": "Tipo",
     "NUMENERA.item.cypher.type.anoetic": "Anoético",
     "NUMENERA.item.cypher.type.occultic": "Esotérico",
     "NUMENERA.item.cypher.type.manifest": "Evidente",
@@ -255,7 +255,6 @@
 
     "NUMENERA.item.skill.stat": "Estadística",
     "NUMENERA.item.skill.description": "Descripción",
-    "NUMENERA.item.skill.relatedAbilityUpdated": "Información de Habilidad relacionada actualizada",
     "NUMENERA.item.skill.useNotLinkedToActor": "La Habilidad no está enlazada a ningún Actor",
 
     "NUMENERA.item.weapon.newWeapon": "Nueva Arma",
